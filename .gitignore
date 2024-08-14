@@ -1,162 +1,207 @@
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+import sys
+import os
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QLineEdit, QMessageBox, QInputDialog, QFileDialog, QLabel, QHBoxLayout, QGridLayout, QScrollArea
+from PySide6.QtGui import QPixmap
+import linecache
 
-# C extensions
-*.so
+class DynamicButtonApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Hell Porn Selector")
+        self.setFixedSize(1200, 1000)
+        self.image_paths = []
 
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+        self.layout_mini = QHBoxLayout()
+        self.layout = QGridLayout()
+        self.layout.addLayout(self.layout_mini, 0, 0)
 
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+        self.main_layout = QVBoxLayout()
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.image_widget = QWidget()
+        self.image_widget.setLayout(self.layout)
+        self.scroll_area.setWidget(self.image_widget)
+        self.main_layout.addWidget(self.scroll_area)
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
+        self.create_button = QPushButton("Create")
+        self.create_button.clicked.connect(self.create_new_button)
 
-# Translations
-*.mo
-*.pot
 
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+        self.main_layout.addWidget(self.create_button)
 
-# Flask stuff:
-instance/
-.webassets-cache
+        # Load previously created buttons
+        self.load_images()
+        #self.load_buttons()
 
-# Scrapy stuff:
-.scrapy
+        self.setLayout(self.main_layout)
 
-# Sphinx documentation
-docs/_build/
+    def create_new_button(self):
+        text, ok = QInputDialog.getText(self, "Enter Text", "Enter text for the new button:")
+        if ok:
+            new_button = QPushButton(text)
+            test_button = QPushButton('Source')
+            # Save the new button to a file
+            self.save_button(text)
 
-# PyBuilder
-.pybuilder/
-target/
+        folder_path = QFileDialog.getExistingDirectory(self, "Select Folder", os.getcwd())
+        if folder_path:
+            self.save_folder_path(folder_path)
+            print(folder_path)
 
-# Jupyter Notebook
-.ipynb_checkpoints
+        img, image_path = QFileDialog.getOpenFileName(self, "Select Image", "", "Image Files (*.png *.jpg *.jpeg)")
 
-# IPython
-profile_default/
-ipython_config.py
+        if image_path:
+            # Display the selected image within the container widget
+            pixmap = QPixmap(img)
+            pixmap = pixmap.scaledToHeight(500)
+            image_label = QLabel()
+            image_label.setPixmap(pixmap)
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+            new_button_layout = QHBoxLayout()
+            new_button_widget = QWidget()
 
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+            new_button_layout.addWidget(new_button)
+            new_button_layout.addWidget(test_button)
+            new_button_widget.setLayout(new_button_layout)
 
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
 
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#pdm.lock
-#   pdm stores project-wide configurations in .pdm.toml, but it is recommended to not include it
-#   in version control.
-#   https://pdm.fming.dev/latest/usage/project/#working-with-version-control
-.pdm.toml
-.pdm-python
-.pdm-build/
+            row = len(self.image_paths) // 3
+            col = len(self.image_paths) % 3
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
+            if row <= 0:
+                self.layout.addWidget(image_label, row, col)
+                self.layout.addWidget(new_button_widget,  (row + 1), col)
+            else:
+                self.layout.addWidget(image_label, (row + 1), col)
+                self.layout.addWidget(new_button_widget,  (row + 2), col)
 
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
+            print(row)
 
-# SageMath parsed files
-*.sage.py
+            self.image_paths.append(image_path)
 
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+            self.save_image(img)
 
-# Spyder project settings
-.spyderproject
-.spyproject
 
-# Rope project settings
-.ropeproject
 
-# mkdocs documentation
-/site
+    def save_image(self, img):
+        if not os.path.exists("image.txt"):
+            with open("image.txt", "w") as t:
+                t.write(img)
+        else:
+            with open("image.txt", "a") as t:
+                t.write("\n" + img)
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+    def save_folder_path(self, fld):
+        if not os.path.exists("folder.txt"):
+            with open("folder.txt", "w") as f:
+                f.write(fld)
+        else:
+            with open("folder.txt", "a") as f:
+                f.write("\n" + fld)
 
-# Pyre type checker
-.pyre/
+    def save_button(self, text):
+        if not os.path.exists("buttons.txt"):
+            with open("buttons.txt", "w") as f:
+                f.write(text)
+        else:
+            with open("buttons.txt", "a") as f:
+                f.write("\n" + text)
 
-# pytype static type analyzer
-.pytype/
+    def load_images(self):
+        if os.path.exists("image.txt"):
+            with open("image.txt", "r") as t:
+                lines = t.readlines()
+                num_lines = len(lines)
+                print(num_lines)
 
-# Cython debug symbols
-cython_debug/
+                x = 0
+                y = 1
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+                image_file = "image.txt"
+                button_file = "buttons.txt"
+                folder_file = "folder.txt"
+
+                while x < num_lines:
+
+                    specific_image_line = linecache.getline(image_file, y)
+                    specific_image_text = specific_image_line.strip()
+
+                    specific_button_line = linecache.getline(button_file, y)
+                    specific_button_text = specific_button_line.strip()
+
+                    specific_folder_line = linecache.getline(folder_file, y)
+                    specific_folder_text = specific_folder_line.strip()
+
+                    print(specific_folder_text)
+
+                    pixmap = QPixmap(specific_image_text)
+                    pixmap = pixmap.scaledToHeight(500)
+                    image_label = QLabel()
+                    image_label.setPixmap(pixmap)
+
+                    new_button = QPushButton(specific_button_text)
+                    test_button = QPushButton('Source')
+                    test_button.clicked.connect(lambda checked, path=specific_folder_text: self.open_folder(path))
+
+
+                    new_button_layout = QHBoxLayout()
+                    new_button_widget = QWidget()
+
+                    new_button_layout.addWidget(new_button)
+                    new_button_layout.addWidget(test_button)
+                    new_button_widget.setLayout(new_button_layout)
+
+                    row = x // 3
+                    col = x % 3
+
+                    if row <= 0:
+                        self.layout.addWidget(image_label, row, col)
+                        self.layout.addWidget(new_button_widget, (row + 1), col)
+                    else:
+                        if row <= 1:
+                            self.layout.addWidget(image_label, (row + 1), col)
+                            self.layout.addWidget(new_button_widget, (row + 2), col)
+                        else:
+                            self.layout.addWidget(image_label, (row * row), col)
+                            self.layout.addWidget(new_button_widget, (row * row + 1), col)
+
+                    x = x + 1
+                    y = y + 1
+
+    def open_folder(self, folder_path):
+        if os.path.exists(folder_path):
+            os.startfile(folder_path)
+        else:
+            print('folder does not exist')
+
+
+
+
+"""
+    def load_images(self):
+        if os.path.exists("image.txt"):
+            with open("image.txt", "r") as t:
+                for line in t:
+                    image_text = line.strip()
+                    new_image_map = QPixmap(image_text)
+                    new_image_map = new_image_map.scaledToHeight(500)
+                    new_image = QLabel()
+                    new_image.setPixmap(new_image_map)
+                    self.layout.addWidget(new_image)
+                    print(line)
+
+    def load_buttons(self):
+        if os.path.exists("buttons.txt"):
+            with open("buttons.txt", "r") as f:
+                for line in f:
+                    button_text = line.strip()
+                    new_button = QPushButton(button_text)
+                    self.layout.addWidget(new_button)
+"""
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = DynamicButtonApp()
+    window.show()
+    sys.exit(app.exec())
